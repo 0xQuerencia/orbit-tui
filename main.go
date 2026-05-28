@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
@@ -92,4 +95,68 @@ type Model struct {
 	ConnTable table.Model
 }
 
-func main() {}
+func headerStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(th.Base).
+		Background(th.Primary).
+		Bold(true)
+}
+
+func cardStyle(th Theme, w int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(th.Primary).
+		Padding(1, 2).
+		Width(w - 4)
+}
+
+func tabStyle(th Theme, active bool) lipgloss.Style {
+	if active {
+		return lipgloss.NewStyle().
+			Foreground(th.Primary).
+			Background(th.TabBg).
+			Padding(0, 2).
+			Bold(true).
+			BorderBottom(true).
+			BorderForeground(th.Primary)
+	}
+	return lipgloss.NewStyle().
+		Foreground(th.Subtle).
+		Background(th.TabBg).
+		Padding(0, 2)
+}
+
+func labelStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(th.Accent).Bold(true)
+}
+
+func mutedStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(th.Subtle)
+}
+
+func warnStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(th.Warn).Bold(true)
+}
+
+func valueStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(th.Base)
+}
+
+func sectionStyle(th Theme) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(th.Base).Bold(true)
+}
+
+func warnLabelStyle(warn bool, label string, th Theme) string {
+	if warn {
+		return warnStyle(th).Render(label)
+	}
+	return labelStyle(th).Render(label)
+}
+
+func main() {
+	p := tea.NewProgram(createModel(themes[0]), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+}
