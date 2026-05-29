@@ -10,6 +10,8 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type tickMsg time.Time
@@ -199,4 +201,101 @@ func createModel(th Theme) *Model {
 	return m
 }
 
-func (m *Model) collectSystemStats() {}
+func (m *Model) collectSystemStats() {
+	now := time.Now().UnixNano()
+
+	if cpuVal := measureCPU(); true {
+		m.CPUUsage = cpuVal
+		m.CPUWarn = cpuVal > 0.8
+	}
+	if memPct, memTotal, memUsed, memAvail, swapTotal, swapUsed := measureMemory(); true {
+		m.MemUsage = memPct
+		m.MemTotal = memTotal
+		m.MemUsed = memUsed
+		m.MemAvail = memAvail
+		m.SwapTotal = swapTotal
+		m.SwapUsed = swapUsed
+		m.MemWarn = memPct > 0.9
+	}
+	if diskPct, diskTotal, diskUsed := measureDiskSpace(); true {
+		m.DiskUsage = diskPct
+		m.DiskTotal = diskTotal
+		m.DiskUsed = diskUsed
+		m.DiskWarn = diskPct > 0.9
+	}
+
+	diskReadStr, diskWriteStr, diskReadBytes, diskWriteBytes := measureDiskIO()
+	m.DiskRead = diskReadStr
+	m.DiskWrite = diskWriteStr
+	netSentStr, netRecvStr, netSentBytes, netRecvBytes := measureNetworkIO()
+	m.NetSent = netSentStr
+	m.NetRecv = netRecvStr
+
+	elapsed := float64(now-m.PrevSampleTime) / 1e9
+	if m.PrevSampleTime > 0 && elapsed > 0 {
+		m.DiskReadSpd = formatByteRate(float64(diskReadBytes-m.PrevDiskReadBytes) / elapsed)
+		m.DiskWriteSpd = formatByteRate(float64(diskWriteBytes-m.PrevDiskWriteBytes) / elapsed)
+		m.NetUpSpd = formatByteRate(float64(netSentBytes-m.PrevNetSentBytes) / elapsed)
+		m.NetDnSpd = formatByteRate(float64(netRecvBytes-m.PrevNetRecvBytes) / elapsed)
+	}
+	m.PrevDiskReadBytes = diskReadBytes
+	m.PrevDiskWriteBytes = diskWriteBytes
+	m.PrevNetSentBytes = netSentBytes
+	m.PrevNetRecvBytes = netRecvBytes
+	m.PrevSampleTime = now
+
+	m.SystemUptime = measureUptime()
+	m.BattPercent, m.BattState, m.BattTime = measureBattery()
+	m.GPUUsage, m.GPUName, m.GPUMemUsed, m.GPUMemTotal = measureGPU()
+	m.PublicIP = measurePublicIP()
+	m.CPUTemp = measureCPUTemperature()
+	m.GPUTemp = measureGPUTemperature()
+
+	m.ProcessList = gatherProcesses(20)
+	m.PortList = gatherOpenPorts()
+	m.ConnList = gatherConnections()
+
+	var procRows []table.Row
+	for _, p := range m.ProcessList {
+		procRows = append(procRows, table.Row{p.PID, p.Name, p.CPU, p.Memory, p.Status})
+	}
+	m.ProcTable.SetRows(procRows)
+
+	var portRows []table.Row
+	for _, p := range m.PortList {
+		portRows = append(portRows, table.Row{p.Port, p.PID, p.Name})
+	}
+	m.PortTable.SetRows(portRows)
+
+	var connRows []table.Row
+	for _, c := range m.ConnList {
+		connRows = append(connRows, table.Row{c.Local, c.Remote, c.State, c.Process, c.Protocol})
+	}
+	m.ConnTable.SetRows(connRows)
+}
+
+func measureCPU() float64 {
+	p, err := cpu.Percent(0, false)
+	if err != nil || len(p) == 0 {
+		return 0
+	}
+	return p[0] / 100
+}
+
+func measureMemory() (pct float64, total, used, avail, swapTot, swapUsed string) {
+	v, _ := mem.VirtualMemory()
+	s, _ := mem.SwapMemory()
+	gb := float64(1024 * 1024 * 1024)
+
+	if v != nil {
+		pct = v.UsedPercent / 100
+		total = fmt.Sprintf("%.1fGB", float64(v.Total)/gb)
+		used = fmt.Sprintf("%.1fGB", float64(v.Used)/gb)
+		avail = fmt.Sprintf("%.1fGB", float64(v.Available)/gb)
+	}
+	if s != nil {
+		swapTot = fmt.Sprintf("%.1fGB", float64(s.Total)/gb)
+		swapUsed = fmt.Sprintf("%.1fGB", float64(s.Used)/gb)
+	}
+	return
+}
