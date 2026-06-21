@@ -1,5 +1,6 @@
 package main
 
+// imports
 import (
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ type Theme struct {
 }
 
 var themes = []Theme{
+	// Catppuccin Theme, who doesn't love catppuccin. hehehe
 	{"Purple", "#CBA6F7", "#A6E3A1", "#F38BA8", "#CDD6F4", "#6C7086", "#1E1E2E", "#313244"},
 	{"Green", "#A6E3A1", "#CBA6F7", "#F38BA8", "#CDD6F4", "#6C7086", "#1E1E2E", "#313244"},
 	{"Blue", "#89B4FA", "#A6E3A1", "#F38BA8", "#CDD6F4", "#6C7086", "#1E1E2E", "#313244"},
