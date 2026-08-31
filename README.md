@@ -14,6 +14,17 @@ Terminal based system monitor in Go. Built using bubble tea.
 
 ## install
 
+**from release (recommended)**
+
+download the latest binary from [releases](https://github.com/rickyparmar-raw/orbit-tui/releases), then:
+
+```bash
+chmod +x orbit
+./orbit
+```
+
+from source
+
 ```bash
 git clone https://github.com/rickyparmar-raw/orbit-tui.git
 cd orbit-tui
