@@ -1,48 +1,59 @@
-# Orbit TUI
+# Orbit
 
-Terminal based system monitor in Go. Built using bubble tea.
+A compact Linux system-monitoring TUI built with **Rust + Ratatui**.
 
-## What it does
+The dashboard follows the reference image: blue status header, six keyboard-accessible tabs, CPU/Memory/Disk panels, Network and Alerts panels, and Git/Todo summaries. All percentages and counts come from the local machine.
 
-- live cpu/ram/disk usage with progress bars 
-- process table
-- open tcp ports + process which owns them
-- gpu stats via nvidia-smi
-- battery status
-- public ip
-- catpuccin themes because why not
+## Install
 
-## install
+Requires stable Rust/Cargo and a Linux terminal.
 
-**from release (recommended)**
+    git clone https://github.com/0xQuerencia/orbit-tui.git
+    cd orbit-tui
+    cargo run --release
 
-download the latest binary from [releases](https://github.com/rickyparmar-raw/orbit-tui/releases), then:
+Or install the command:
 
-```bash
-chmod +x orbit
-./orbit
-```
+    cargo install --path .
+    orbit
 
-from source
+The original Go/Bubble Tea prototype remains in the repository for comparison. The new Ratatui application is under src/ and is built by Cargo.
 
-```bash
-git clone https://github.com/rickyparmar-raw/orbit-tui.git
-cd orbit-tui
-go build -o orbit .
-./orbit
-```
+## Pages
 
-## keybinds
+- **Dashboard:** CPU history, GPU where supported, battery, RAM/swap, root filesystem usage, disk I/O, network totals/throughput, listening ports, alerts, Git status and todos.
+- **Processes:** CPU-sorted process table, pinning and filtering.
+- **Ports:** Linux TCP listeners and accessible owning PID/process.
+- **Connections:** Linux TCP and UDP sockets and statuses.
+- **Git:** branch, working-tree changes and recent commits from the current directory.
+- **Todo:** persisted in XDG_STATE_HOME/orbit/todos.tsv (fallback ~/.local/state/orbit/todos.tsv).
 
-tab/arrows - switch tabs
-up/down - move around
-enter - kill process 
-shift+left/right - change theme
-? - help
-q - quit 
+## Controls
 
-## notes 
+| Key | Action |
+| --- | --- |
+| 1–6 / Tab / arrows | Switch tabs |
+| Up/Down / j/k | Select a row |
+| / | Search processes, ports and connections |
+| p | Pin/unpin a process |
+| Enter | Request SIGTERM in Processes/Ports (requires confirmation); toggle todo |
+| a | Add a todo from Dashboard/Todo |
+| x / d | Complete/delete selected todo |
+| w | Cycle Orbit/Catppuccin colors |
+| r | Refresh |
+| ? | Help |
+| q / Ctrl+C | Quit |
 
-- linux only 
-- gpu stuff needs nvidia-smi
-- battery reads from /sys/class/power_supply/
+## Notes
+
+- Linux only. NVIDIA GPU metrics require nvidia-smi. Unsupported GPU/battery data is shown as unavailable.
+- /proc and /sys provide Linux socket, battery and disk stats; sysinfo provides CPU, memory and processes. PID ownership depends on permissions.
+- No external public-IP requests, telemetry, or background network uploads.
+- Process termination requires confirmation and sends SIGTERM, not SIGKILL.
+- Dashboard compresses on narrow terminals and tells you when the terminal is too small.
+- Git status applies to the directory where Orbit was launched.
+
+## Development
+
+    cargo test --all-targets
+    cargo build --release
