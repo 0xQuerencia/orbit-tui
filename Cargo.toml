@@ -3,7 +3,6 @@ name = "orbit"
 version = "0.2.0"
 edition = "2021"
 description = "A compact Linux system-monitoring TUI"
-license = "MIT"
 
 [dependencies]
 ratatui = "0.29"
