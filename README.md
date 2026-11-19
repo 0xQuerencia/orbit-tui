@@ -17,7 +17,7 @@ Or install the command:
     cargo install --path .
     orbit
 
-The original Go/Bubble Tea prototype remains in the repository for comparison. The new Ratatui application is under src/ and is built by Cargo.
+Orbit has moved from the original Go/Bubble Tea prototype to Rust/Ratatui. The old Go implementation remains available in Git history. The Rust application is in src/.
 
 ## Pages
 
