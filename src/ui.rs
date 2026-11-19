@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     app::{App, TABS},
-    metrics::{format_bytes, percent},
+    metrics::format_bytes,
 };
 
 #[derive(Clone, Copy)]
@@ -237,11 +237,11 @@ fn draw_cpu(frame: &mut Frame, app: &App, area: Rect, p: Palette) {
         Line::from(vec![
             styled("GPU ", p.muted),
             styled(m.gpu.usage.map(|n| format!("{n:.0}%")).unwrap_or_else(|| "n/a".into()), p.green),
-            styled(format!(" · battery {}", m.battery.percent.map(|n| format!("{n}%")).unwrap_or_else(|| "n/a".into())), p.muted),
+            styled(format!(" · battery {} {}", m.battery.percent.map(|n| format!("{n}%")).unwrap_or_else(|| "n/a".into()), m.battery.state), p.muted),
         ]),
         Line::from(styled(
             if m.gpu.name.is_empty() { "GPU: no NVIDIA sensor detected".to_owned() }
-            else { format!("{} · {} MiB", m.gpu.name, m.gpu.used_mib.unwrap_or(0)) },
+            else { format!("{} · {} / {} MiB", m.gpu.name, m.gpu.used_mib.unwrap_or(0), m.gpu.total_mib.unwrap_or(0)) },
             p.muted,
         )),
     ];
@@ -453,7 +453,9 @@ fn draw_footer(frame: &mut Frame, app: &App, area: Rect, p: Palette) {
             1 => " 1–6 switch tab    / search    p pin    ↑↓ move    Enter signal    ? all keys    q quit".into(),
             2 => " 1–6 switch tab    / search    ↑↓ move    Enter signal    ? all keys    q quit".into(),
             5 => " 1–6 switch tab    a add    x/Enter toggle    d delete    ↑↓ move    q quit".into(),
-            _ => " 1–6 switch tab    / search    p pin    w theme    ? all keys    q quit".into(),
+            0 => " 1–6 switch tab    a add todo    w theme    ? all keys    q quit".into(),
+            3 => " 1–6 switch tab    / search    ↑↓ move    ? all keys    q quit".into(),
+            _ => " 1–6 switch tab    w theme    r refresh    ? all keys    q quit".into(),
         }
     };
     frame.render_widget(Paragraph::new(content).style(Style::default().fg(p.muted)), area);
@@ -522,6 +524,19 @@ mod tests {
         let p = centered(60, 7, screen);
         assert_eq!(p.x, 10);
         assert_eq!(p.y, 6);
+    }
+
+    #[test]
+    fn dashboard_has_reference_panels() {
+        use ratatui::{backend::TestBackend, Terminal};
+        let mut terminal = Terminal::new(TestBackend::new(160, 36)).expect("test backend");
+        let app = App::new();
+        terminal.draw(|frame| draw(frame, &app)).expect("draw");
+        let visible: String = terminal.backend().buffer().content()
+            .iter().map(|cell| cell.symbol()).collect();
+        for title in ["CPU", "Memory", "Disk", "Network", "Alerts", "Git and todo"] {
+            assert!(visible.contains(title), "missing panel: {title}");
+        }
     }
 
     #[test]
